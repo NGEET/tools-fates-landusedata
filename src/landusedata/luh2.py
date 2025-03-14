@@ -50,7 +50,8 @@ def main(args):
         # Regrid the luh2 data to the target grid
         # TO DO: provide a check for the save argument based on the input arguments
         regrid_luh2,regridder_luh2 = RegridConservative(dataset, ds_regrid_target,
-                                                        args.regridder_weights, regrid_reuse)
+                                                        args.regridder_weights, regrid_reuse, 
+                                                        intermediate_regridding_file=args.intermediate_regridding_file)
 
         # Regrid the inverted ice/water fraction data to the target grid
         regrid_land_fraction = regridder_luh2(ds_luh2_static)
@@ -74,14 +75,15 @@ def main(args):
             regrid_luh2["LATIXY"] = ds_regrid_target["LATIXY"] # TO DO: double check if this is strictly necessary
 
         # Rename the dimensions for the output.  This needs to happen after the "LONGXY/LATIXY" assignment
-        if (not 'lsmlat' in list(regrid_luh2.dims)):
+        if (not 'lsmlat' in list(regrid_luh2.dims)) and 'lsmlat' in list(ds_regrid_target.dims):
             regrid_luh2 = regrid_luh2.rename_dims({'lat':'lsmlat','lon':'lsmlon'})
 
         # Reapply the coordinate attributes.  This is a workaround for an xarray bug (#8047)
         # Currently only need time
         regrid_luh2.time.attrs = dataset.time.attrs
-        regrid_luh2.lat.attrs = dataset.lat.attrs
-        regrid_luh2.lon.attrs = dataset.lon.attrs
+        if 'lsmlat' in list(ds_regrid_target.dims):
+            regrid_luh2.lat.attrs = dataset.lat.attrs
+            regrid_luh2.lon.attrs = dataset.lon.attrs
 
         # Merge previous regrided luh2 file with merge input target
         # TO DO: check that the grid resolution matches
@@ -99,7 +101,7 @@ def main(args):
     # TO DO: add check to handle if the user enters the full path
     output_file = os.path.join(os.getcwd(),args.output)
     print("generating output: {}".format(output_file))
-    ds_output.to_netcdf(output_file)
+    ds_output.to_netcdf(output_file, format="NETCDF4_CLASSIC")
 
 if __name__ == "__main__":
     main()

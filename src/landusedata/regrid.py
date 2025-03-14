@@ -12,21 +12,21 @@ class TwoStepRegridder:
         
         self.se_regridder = make_se_regridder(regridder_steptwo_weights, regrid_method=regrid_method)
         intermediate_ds = ImportRegridTarget(intermediate_regridding_file)
-        print(intermediate_ds)
+        #print(intermediate_ds)
         self.step_one_regridder = xe.Regridder(ds_to_regrid, intermediate_ds, regrid_method)
-        print(self.step_one_regridder)
+        #print(self.step_one_regridder)
 
     def two_step_regridding(self, ds_to_regrid):
         ds_intermediate = self.step_one_regridder(ds_to_regrid)
         ds_se = self.se_regridder(ds_intermediate).squeeze("lat", drop=True)
-        print(ds_se)
+        #print(ds_se)
         return ds_se.rename({"lon":"lndgrid"}).drop_vars("lndgrid")
 
 
-def RegridConservative(ds_to_regrid, ds_regrid_target, regridder_weights, regrid_reuse, regrid_method="conservative"):
+def RegridConservative(ds_to_regrid, ds_regrid_target, regridder_weights, regrid_reuse, regrid_method="conservative", intermediate_regridding_file=None):
 
     # define the regridder transformation
-    regridder = GenerateRegridder(ds_to_regrid, ds_regrid_target, regridder_weights, regrid_reuse, regrid_method=regrid_method)
+    regridder = GenerateRegridder(ds_to_regrid, ds_regrid_target, regridder_weights, regrid_reuse, regrid_method=regrid_method, intermediate_regridding_file=intermediate_regridding_file)
 
     # Loop through the variables to regrid
     ds_regrid = RegridLoop(ds_to_regrid, regridder)
@@ -36,7 +36,7 @@ def RegridConservative(ds_to_regrid, ds_regrid_target, regridder_weights, regrid
 def GenerateRegridder(ds_to_regrid, ds_regrid_target, regridder_weights_file, regrid_reuse, regrid_method = "conservative", intermediate_regridding_file=None):
     
     print("\nDefining regridder, method: ", regrid_method)
-    print(ds_to_regrid.dims)
+    #print(ds_to_regrid.dims)
     if 'lat' not in ds_regrid_target.dims:
         two_step_regridder = TwoStepRegridder(ds_to_regrid, regridder_weights_file, intermediate_regridding_file, regrid_method=regrid_method)
         regridder = two_step_regridder.two_step_regridding #make_se_regridder(regridder_weights_file, regrid_method=regrid_method)
@@ -67,12 +67,12 @@ def make_se_regridder(weight_file, regrid_method):
     if len(out_shape) == 1:
         out_shape = [1, out_shape.item()]
 
-    print(in_shape, out_shape)
-    print(weights)
-    print(len(weights.yc_a.data.reshape(in_shape)[:, 0]))
-    print(weights.yc_a.data.reshape(in_shape)[:, 0])
-    print(len((weights.xc_a.data.reshape(in_shape)[0, :])))
-    print((weights.xc_a.data.reshape(in_shape)[0, :]))
+    #print(in_shape, out_shape)
+    #print(weights)
+    #print(len(weights.yc_a.data.reshape(in_shape)[:, 0]))
+    #print(weights.yc_a.data.reshape(in_shape)[:, 0])
+    #print(len((weights.xc_a.data.reshape(in_shape)[0, :])))
+    #print((weights.xc_a.data.reshape(in_shape)[0, :]))
     #sys.exit(4)
     dummy_out = xr.Dataset(
         {
