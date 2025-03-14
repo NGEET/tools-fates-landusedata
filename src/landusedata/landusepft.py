@@ -95,7 +95,7 @@ def main(args):
     # Output dataset to netcdf file
     print('Writing fates landuse x pft dataset to file')
     output_file = os.path.join(os.getcwd(),args.output)
-    ds_output.to_netcdf(output_file)
+    ds_output.to_netcdf(output_file, format="NETCDF4_CLASSIC")
 
 if __name__ == "__main__":
     main()
