@@ -74,16 +74,33 @@ def make_se_regridder(weight_file, regrid_method):
     #print(len((weights.xc_a.data.reshape(in_shape)[0, :])))
     #print((weights.xc_a.data.reshape(in_shape)[0, :]))
     #sys.exit(4)
+    # Making some bounds inputs:
+    #print(in_shape)
+    lat_b_in = np.zeros(in_shape[0]+1)
+    lon_b_in = weights.xv_a.data[:in_shape[1]+1, 0]
+    #print(lon_b_in[0:10])
+    #print(weights.yv_a.data.shape)
+    #print(np.arange(in_shape[0]+1)*in_shape[1],)
+    #print(weights.yv_a.data[-5:-1, :])
+    lat_b_in[:-1] = weights.yv_a.data[np.arange(in_shape[0])*in_shape[1],0]
+    lat_b_in[-1] = weights.yv_a.data[-1,-1]
+    #print(lat_b_in)
+    #sys.exit(4)
+
     dummy_out = xr.Dataset(
         {
             "lat": ("lat", np.empty((out_shape[0],))),
             "lon": ("lon", np.empty((out_shape[1],))),
+            "lat_b": ("lat_b", np.empty((out_shape[0]+1,))),
+            "lon_b": ("lon_b", np.empty((out_shape[1]+1,)))
         }
     )
     dummy_in= xr.Dataset(
         {
             "lat": ("lat", weights.yc_a.data.reshape(in_shape)[:, 0]),
             "lon": ("lon", weights.xc_a.data.reshape(in_shape)[0, :]),
+            "lat_b": ("lat_b", lat_b_in),
+            "lon_b": ("lon_b", lon_b_in)
         }
     )
 
@@ -92,8 +109,8 @@ def make_se_regridder(weight_file, regrid_method):
         dummy_out,
         weights=weight_file,
         #method="conservative_normed",
-        #method=regrid_method,
-        method="bilinear",
+        method=regrid_method,
+        #method="bilinear",
         reuse_weights=True,
         periodic=True,
     )

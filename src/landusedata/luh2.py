@@ -1,6 +1,7 @@
 import argparse, os, sys
 
 import xarray as xr
+from datetime import datetime, UTC
 
 from landusedata.luh2mod import ImportLUH2TimeSeries, CorrectStateSum
 from landusedata.regrid import RegridConservative, RegridLoop
@@ -99,9 +100,12 @@ def main(args):
 
     # Write the files
     # TO DO: add check to handle if the user enters the full path
-    output_file = os.path.join(os.getcwd(),args.output)
+    if args.output == "LUH2_timeseries.nc":
+        output_file = os.path.join(os.getcwd(), f"LUH2_timeseries_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc")
+    else: 
+        output_file = os.path.join(os.getcwd(),args.output)
     print("generating output: {}".format(output_file))
-    ds_output.to_netcdf(output_file, format="NETCDF4_CLASSIC")
+    ds_output.to_netcdf(output_file)
 
 if __name__ == "__main__":
     main()

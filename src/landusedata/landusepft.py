@@ -1,6 +1,7 @@
 import argparse, os, sys
 import xarray as xr
 import xesmf as xe
+from datetime import datetime, UTC
 
 from landusedata.landusepftmod import ImportLandusePFTFile, AddLatLonCoordinates, RenormalizePFTs
 from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget
@@ -93,9 +94,14 @@ def main(args):
     # ds_regrid = ds_regrid.rename_dims(dims_dict={'lat':'lsmlat','lon':'lsmlon'})
 
     # Output dataset to netcdf file
-    print('Writing fates landuse x pft dataset to file')
-    output_file = os.path.join(os.getcwd(),args.output)
-    ds_output.to_netcdf(output_file, format="NETCDF4_CLASSIC")
+    if args.output == "fates_landuse_pft_map.nc":
+        fname = f"fates_landuse_pft_map_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc"
+        print(fname)
+        output_file = os.path.join(os.getcwd(), fname)
+    else: 
+        output_file = os.path.join(os.getcwd(),args.output)
+    print(f'Writing fates landuse x pft dataset to file {output_file}')
+    ds_output.to_netcdf(output_file)
 
 if __name__ == "__main__":
     main()
