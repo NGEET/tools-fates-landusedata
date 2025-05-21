@@ -26,25 +26,22 @@ def PrepDataset(input_dataset,start=None,stop=None):
 
     # Get the units to determine the file time
     # It is expected that the units of time is 'years since ...'
+    
+    orig_unit = input_dataset.time.units
+    if orig_unit.startswith("days"):
+        input_dataset['time'] = input_dataset.time.values//365
+        input_dataset.time.attrs['units'] = orig_unit.replace("days", "years")
     time_since_array = input_dataset.time.units.split()
-    print(input_dataset.time)
-    print(time_since_array)
-    if (time_since_array[0] == 'years'):
-
-
-        # Note that datetime package is not used as the date range might
-        # be beyond the bounds of the packages applicable bounds
-        time_since = int(time_since_array[2].split('-')[0])
-
-        # Get the time bounds of the input file
-        start_bound = input_dataset.time.values[0]
-        stop_bound = input_dataset.time.values[-1]
-    elif (time_since_array[0] == 'days'):
-        time_since = int(time_since_array[2].split("-")[0])
-        start_bound = int(input_dataset.time.values[0]//365)
-        stop_bound = int(input_dataset.time.values[0]//365)
-    else:
+    if not (time_since_array[0] == 'years'):
         sys.exit("FileTimeUnitsError: input file units of time is not 'years since ...' or 'days since ...'")
+
+    # Note that datetime package is not used as the date range might
+    # be beyond the bounds of the packages applicable bounds
+    time_since = int(time_since_array[2].split('-')[0])
+
+    # Get the time bounds of the input file
+    start_bound = input_dataset.time.values[0]
+    stop_bound = input_dataset.time.values[-1]
 
     # If no input provided, simply get the bounds of the time
     if (isinstance(start,type(None))):
