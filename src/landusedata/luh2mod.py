@@ -27,8 +27,12 @@ def PrepDataset(input_dataset,start=None,stop=None):
     # Get the units to determine the file time
     # It is expected that the units of time is 'years since ...'
     time_since_array = input_dataset.time.units.split()
-    if (time_since_array[0] != 'years'):
-        sys.exit("FileTimeUnitsError: input file units of time is not 'years since ...'")
+    if (not (time_since_array[0] == 'years' or time_since_array[0] == 'days' ) ):
+        sys.exit("FileTimeUnitsError: input file units of time is not 'years since ...' or 'days since ...'")
+
+    if (time_since_array[0] == 'days' ):
+        input_dataset['time'] = input_dataset.time / 365
+        print(input_dataset.time)
 
     # Note that datetime package is not used as the date range might
     # be beyond the bounds of the packages applicable bounds
@@ -75,11 +79,24 @@ def _BoundsVariableFixLUH2(input_dataset):
 
     # Create lat and lon bounds as a single dimension array out of the LUH2 two dimensional_bounds array.
     # Future todo: is it possible to have xESMF recognize and use the original 2D array?
-    input_dataset["lat_b"] = np.insert(input_dataset.lat_bounds[:,1].data,0,input_dataset.lat_bounds[0,0].data)
-    input_dataset["lon_b"] = np.insert(input_dataset.lon_bounds[:,1].data,0,input_dataset.lon_bounds[0,0].data)
+    try:
+        input_dataset["lat_b"] = np.insert(input_dataset.lat_bounds[:,1].data,0,input_dataset.lat_bounds[0,0].data)
+        input_dataset["lon_b"] = np.insert(input_dataset.lon_bounds[:,1].data,0,input_dataset.lon_bounds[0,0].data)
+    except:
+        input_dataset["lat_b"] = np.arange(len(input_dataset.lat)+1)*(-0.25) + 90.
+        input_dataset["lon_b"] = np.arange(len(input_dataset.lon)+1)*0.25 - 180.
+
+    #print(input_dataset["lon_b"] )
+    #print(input_dataset["lon"] )
+    
+    #print(input_dataset["lat_b"] )
+    #print(input_dataset["lat"] )
 
     # Drop the old boundary names to avoid confusion
-    input_dataset = input_dataset.drop(labels=['lat_bounds','lon_bounds'])
+    try:
+        input_dataset = input_dataset.drop(labels=['lat_bounds','lon_bounds'])
+    except:
+        print('didnt need to drop lat_bounds & lon_bounds')
 
     print("LUH2 dataset lat/lon boundary variables formatted and added as new variable for xESMF")
 
