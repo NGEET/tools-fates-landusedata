@@ -1,4 +1,4 @@
-name: miniconda setup
+name: Unit testing with Conda
 
 on:
   workflow_dispatch:
@@ -48,5 +48,5 @@ jobs:
           conda env update --file environment.yml --name test
           rm environment.yml
 
-      - name: Run tests
+      - name: Run unit tests
         run: pytest
