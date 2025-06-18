@@ -1,12 +1,6 @@
 name: unit testing
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths-ignore:
-      - 'README.md'
-  schedule:
-    - cron: '30 23 * * SUN'
   workflow_dispatch:
 
 jobs:
