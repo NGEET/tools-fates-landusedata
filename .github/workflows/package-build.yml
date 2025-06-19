@@ -32,7 +32,7 @@ jobs:
         run: conda install -c conda-forge grayskull conda-build anaconda-client -y
 
       - name: Generate meta.yaml with grayskull
-        run: grayskull pypi ${{ github.event.repository.html_url }}}}" 
+        run: grayskull pypi ${{ github.event.repository.html_url }}
 
       - name: Build conda package
         run: conda build ${{ github.event.repository.name}}
