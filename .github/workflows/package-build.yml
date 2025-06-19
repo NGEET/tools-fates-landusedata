@@ -1,0 +1,44 @@
+name: Build package and upload
+
+# This workflow currently assumes that main has been successfully tested and passes.  This should
+# eventually call a test workflow as a final check.  Or the workflow coudl automatically trigged a release
+# once a pull request has been merged and all tests pass.
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.12"
+          channels: conda-forge
+          channel-priority: flexible
+          show-channel-urls: true
+
+      - name: Install build and publishing tools
+        run: conda install -c conda-forge grayskull conda-build anaconda-client -y
+
+      - name: Generate meta.yaml with grayskull
+        run: grayskull pypi ${{ github.event.repository.html_url }}
+
+      - name: Build conda package
+        run: conda build ${{ github.event.repository.name }}
+
+      - name: Upload conda package to Anaconda Cloud
+        run: |
+          anaconda login \
+            --username $${{ secrets.ANACONDA_USERNAME }} \
+            --password $${{ secrets.ANACONDA_PASSWORD }}
+          anaconda upload --user ngeetropics \
+            $${{ github.event.repository.name }} \
+            /usr/share/miniconda/envs/test/conda-bld/noarch/${{ github.event.repository.name }}-0.0.0-py_0.conda
