@@ -19,7 +19,6 @@ jobs:
         shell: bash -el {0}
 
     steps:
-
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -35,4 +34,13 @@ jobs:
         run: grayskull pypi ${{ github.event.repository.html_url }}
 
       - name: Build conda package
-        run: conda build ${{ github.event.repository.name}}
+        run: conda build ${{ github.event.repository.name }}
+
+      - name: Upload conda package to Anaconda Cloud
+        run: |
+          anaconda login \
+            --username $${{ secrets.ANACONDA_USERNAME }} \
+            --password $${{ secrets.ANACONDA_PASSWORD }}
+          anaconda upload --user ngeetropics \
+            $${{ github.event.repository.name }} \
+            /usr/share/miniconda/envs/test/conda-bld/noarch/${{ github.event.repository.name }}-0.0.0-py_0.conda
