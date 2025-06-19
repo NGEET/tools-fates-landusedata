@@ -28,5 +28,5 @@ jobs:
 
         - name: Generate conda-lock.yml
           run: | 
-           conda-lock -f pyproject.toml -p linux-64 -o conda-lock.yml
+           conda-lock -f pyproject.toml -p linux-64
            
