@@ -1,7 +1,12 @@
 name: Generate a lockfile for reproducible conda environments
 
+# This workflow should be triggered when the pyproject.toml file is modified.
+# It will also regenerate the lockfile on a regular schedule to ensure it remains up-to-date.
+
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * MON'  # Every Monday at midnight UTC
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
