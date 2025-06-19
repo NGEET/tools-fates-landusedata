@@ -52,7 +52,7 @@ addopts = [
 
 [tool.conda-lock]
 platforms = "linux-64"
-channels = ["conda-forge", "ngeetropics"]
+channels = ["conda-forge", "defaults", "ngeetropics",]
 
 [project.scripts]
 fates-landusedata = "landusedata._main:main"
