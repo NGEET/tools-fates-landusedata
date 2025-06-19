@@ -49,5 +49,10 @@ addopts = [
     "--verbose",
     "--color=yes",
 ]
+
+[tool.conda-lock]
+platforms = "linux-64"
+channels = ["conda-forge", "ngeetropics"]
+
 [project.scripts]
 fates-landusedata = "landusedata._main:main"
