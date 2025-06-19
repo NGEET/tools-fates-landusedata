@@ -8,8 +8,6 @@ on:
   workflow_dispatch:
   release:
     types: [published]
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 jobs:
   build-and-upload:
