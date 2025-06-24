@@ -35,30 +35,29 @@ def RegridLoop(ds_to_regrid, regridder):
     # Loop through the variables one at a time to conserve memory
     ds_varnames = list(ds_to_regrid.variables.keys())
     varlen = len(ds_to_regrid.variables)
-    first_var = False
-    for i in range(varlen-1):
+    first_var = True
+    for i, var in enumerate(ds_to_regrid):
+        msg_text = " variable {}/{}: {}\n".format(i+1, varlen, var)
 
-        # Skip time variable
-        if (not "time" in ds_varnames[i]):
+        # Skip time variable and only regrid variables that match the lat/lon shape.
+        do_regrid = not "time" in var
+        do_regrid = do_regrid and \
+            ds_to_regrid[var][0].shape == (ds_to_regrid.lat.shape[0], ds_to_regrid.lon.shape[0])
+        if not do_regrid :
+            print("skipping" + msg_text)
+            continue
 
-            # Only regrid variables that match the lat/lon shape.
-            if (ds_to_regrid[ds_varnames[i]][0].shape == (ds_to_regrid.lat.shape[0], ds_to_regrid.lon.shape[0])):
-                print("regridding variable {}/{}: {}".format(i+1, varlen, ds_varnames[i]))
+        print("regridding" + msg_text)
 
-                # For the first non-coordinate variable, copy and regrid the dataset as a whole.
-                # This makes sure to correctly include the lat/lon in the regridding.
-                if (not(first_var)):
-                    ds_regrid = ds_to_regrid[ds_varnames[i]].to_dataset() # convert data array to dataset
-                    ds_regrid = regridder(ds_regrid)
-                    first_var = True
+        # For the first non-coordinate variable, copy and regrid the dataset as a whole.
+        # This makes sure to correctly include the lat/lon in the regridding.
+        if first_var:
+            ds_regrid = ds_to_regrid[var].to_dataset() # convert data array to dataset
+            ds_regrid = regridder(ds_regrid)
+            first_var = False
 
-                # Once the first variable has been included, then we can regrid by variable
-                else:
-                    ds_regrid[ds_varnames[i]] = regridder(ds_to_regrid[ds_varnames[i]])
-            else:
-                print("skipping variable {}/{}: {}".format(i+1, varlen, ds_varnames[i]))
+        # Once the first variable has been included, then we can regrid by variable
         else:
-            print("skipping variable {}/{}: {}".format(i+1, varlen, ds_varnames[i]))
+            ds_regrid[var] = regridder(ds_to_regrid[var])
 
-    print("\n")
     return(ds_regrid)
