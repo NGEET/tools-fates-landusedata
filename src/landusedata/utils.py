@@ -5,7 +5,7 @@ def ImportRegridTarget(filename):
 
     # Check the file type
     dim_list = list(dataset.dims)
-    if ('lsmlat' in list(dataset.dims)) != True:
+    if all(item not in dim_list for item in ['lsmlat','gridcell']):
         raise TypeError("incorrect file, must be surface dataset")
 
     # Prepare the the regrid dataset
