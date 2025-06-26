@@ -1,10 +1,12 @@
 import argparse, os, sys
 import xarray as xr
 import xesmf as xe
+from datetime import datetime, UTC
 
 from landusedata.landusepftmod import ImportLandusePFTFile, AddLatLonCoordinates, RenormalizePFTs
 from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget
 from landusedata.utils import SetMaskRegridTarget, DefineStaticMask
+from landusedata.regrid import GenerateRegridder
 
 def main(args):
 
@@ -70,7 +72,9 @@ def main(args):
 
         # Regrid current dataset
         print('Regridding {}'.format(varname))
-        regridder = xe.Regridder(ds_percent, ds_target, "conservative_normed")
+        #regridder = xe.Regridder(ds_percent, ds_target, "conservative_normed")
+        print(args)
+        regridder = GenerateRegridder(ds_percent, ds_target, args.regridder_weights, regrid_reuse=False, regrid_method="conservative_normed", intermediate_regridding_file=args.intermediate_regridding_file)
         ds_regrid = regridder(ds_percent)
 
         # Drop mask to avoid conflicts when merging
@@ -79,6 +83,8 @@ def main(args):
             ds_regrid = ds_regrid.drop_vars(['mask'])
 
         # Append the new dataset to the output dataset
+        print(ds_regrid)
+        print(ds_regrid.indexes)
         ds_output = ds_output.merge(ds_regrid)
 
     # Duplicate the 'primary' data array into a 'secondary' data array.  Eventually
@@ -88,8 +94,13 @@ def main(args):
     # ds_regrid = ds_regrid.rename_dims(dims_dict={'lat':'lsmlat','lon':'lsmlon'})
 
     # Output dataset to netcdf file
-    print('Writing fates landuse x pft dataset to file')
-    output_file = os.path.join(os.getcwd(),args.output)
+    if args.output == "fates_landuse_pft_map.nc":
+        fname = f"fates_landuse_pft_map_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc"
+        print(fname)
+        output_file = os.path.join(os.getcwd(), fname)
+    else: 
+        output_file = os.path.join(os.getcwd(),args.output)
+    print(f'Writing fates landuse x pft dataset to file {output_file}')
     ds_output.to_netcdf(output_file)
 
 if __name__ == "__main__":

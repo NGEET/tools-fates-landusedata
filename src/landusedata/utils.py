@@ -5,7 +5,7 @@ def ImportRegridTarget(filename):
 
     # Check the file type
     dim_list = list(dataset.dims)
-    if ('lsmlat' in list(dataset.dims)) != True:
+    if ('lsmlat' in list(dataset.dims)) != True and ('gridcell' not in list(dataset.dims)):
         raise TypeError("incorrect file, must be surface dataset")
 
     # Prepare the the regrid dataset
@@ -21,19 +21,24 @@ def _RegridTargetPrep(regrid_target):
     by xesmf.  As such, this function renames the dimensions.  It also adds
     lat/lon coordinates based on the LONGXY and LATIXY variables.
     """
-    regrid_target = regrid_target.rename_dims(dims_dict={'lsmlat':'lat','lsmlon':'lon'})
-    regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
-    regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
+    if 'lsmlat' in regrid_target.dims:
+        regrid_target = regrid_target.rename_dims(dims_dict={'lsmlat':'lat','lsmlon':'lon'})
+        regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
+        regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
 
     return regrid_target
 
 # Open the LUH2 static data file
 def ImportLUH2StaticFile(filename):
+    print(filename)
     dataset = xr.open_dataset(filename)
-
+    if 'lat_bnds' in dataset.var():
+        dataset = dataset.rename({"lat_bnds": "lat_bounds", "lon_bnds": "lon_bounds"})
     # Check to see if the imported dataset has correct variables
     listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
+    print(dataset.var())
     if list(dataset.var()) != listcheck:
+
         raise TypeError("incorrect file, must be LUH2 static file")
 
     # Convert all data from single to double precision
