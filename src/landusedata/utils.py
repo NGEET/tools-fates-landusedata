@@ -1,4 +1,5 @@
 import xarray as xr
+from collections import Counter
 
 def ImportRegridTarget(filename):
     dataset = xr.open_dataset(filename)
@@ -33,7 +34,7 @@ def ImportLUH2StaticFile(filename):
 
     # Check to see if the imported dataset has correct variables
     listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
-    if list(dataset.var()) != listcheck:
+    if Counter(list(dataset.var())) != Counter(listcheck):
         raise TypeError("incorrect file, must be LUH2 static file")
 
     # Convert all data from single to double precision
