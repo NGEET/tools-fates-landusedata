@@ -41,6 +41,14 @@ Generating the land use x pft static mapping dataset requires as input the CLM 5
 
 The LUH2 static data file noted in the LUH2 historical dataset section above is also required as an input.
 
+### Regridding weight file for spectral element regridding
+
+In order to regrid to spectral element resolution an ESMF generated weight-file is needed. This can be generated using ESMF (https://earthsystemmodeling.org/docs/release/ESMF_8_4_2/ESMF_refdoc/node3.html) :
+``` sh
+ESMF_RegridWeightGen --source name_of_file_with_source_resolution --destination name_of_file_with_spectral_element_resolution --weigth name_of_weight_file --method conserve
+```
+As the LUH2 data are very highly resolved, the ESMF might not be able to regrid directly to the spectral element resolution from the LUH2 datasets, hence the source resolution here, might need to be on some regular grid that is fairly close to the spectral element grid resolution (this code version was tested using an 0.9x1.25 degree resolution into ne30 spectral element grid).
+
 ## Installation
 
 ### Dependencies
@@ -107,6 +115,9 @@ options:
                         beginning of date range of interest
   -e END, --end END     ending of date range to slice
   -o OUTPUT, --output OUTPUT
+  -i INTERMEDIATE_REGRIDDING_FILE, --intermediate_regridding_file INTERMEDIATE_REGRIDDING_FILE
+                        filename of intermediate regridding weightfile for two-step regridding
+                        to spectral element resolution
                         output filename
 ```
 
@@ -128,6 +139,9 @@ options:
   -h, --help            show this help message and exit
   -o OUTPUT, --output OUTPUT
                         output filename
+  -i INTERMEDIATE_REGRIDDING_FILE, --intermediate_regridding_file INTERMEDIATE_REGRIDDING_FILE
+                        filename of intermediate regridding weightfile for two-step regridding
+                        to spectral element resolution
 
 ```
 
