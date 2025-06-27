@@ -63,10 +63,7 @@ def PrepDataset(input_dataset,start=None,stop=None):
     # Truncate the data to the user defined range
     # This might need some more error handling for when
     # the start/stop is out of range
-    if (time_since_array[0] == 'years'):
-        input_dataset = input_dataset.sel(time=slice(years_since_start,years_since_stop))
-    else:
-        input_dataset = input_dataset.sel(time=slice(years_since_start*365.,years_since_stop*365.))
+    input_dataset = input_dataset.sel(time=slice(years_since_start,years_since_stop))
 
     # Save the timesince as a variable for future use
     input_dataset["timesince"] = time_since
