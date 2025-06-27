@@ -32,9 +32,17 @@ def ImportLUH2StaticFile(filename):
     dataset = xr.open_dataset(filename)
 
     # Check to see if the imported dataset has correct variables
-    listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
-    if list(dataset.var()) != listcheck:
-        raise TypeError("incorrect file, must be LUH2 static file")
+    try:
+        listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
+        if list(dataset.var()) != listcheck:
+            print(dataset.var())
+    except:
+        listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bnds', 'lon_bnds']
+        if list(dataset.var()) != listcheck:
+            print(dataset.var())
+            raise TypeError("incorrect file, must be LUH2 static file")
+
+    #dataset = dataset.drop(labels=['lat_bnds','lon_bnds'])
 
     # Convert all data from single to double precision
     dataset = dataset.astype('float64')
