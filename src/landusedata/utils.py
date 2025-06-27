@@ -22,9 +22,13 @@ def _RegridTargetPrep(regrid_target):
     by xesmf.  As such, this function renames the dimensions.  It also adds
     lat/lon coordinates based on the LONGXY and LATIXY variables.
     """
-    regrid_target = regrid_target.rename_dims(dims_dict={'lsmlat':'lat','lsmlon':'lon'})
-    regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
-    regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
+    if 'lsmlat' in regrid_target.dims:
+        regrid_target = regrid_target.rename_dims(dims_dict={'lsmlat':'lat','lsmlon':'lon'})
+        regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
+        regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
+    elif 'gridcell' in regrid_target.dims:
+        regrid_target['lon'] = regrid_target.LONGXY
+        regrid_target['lat'] = regrid_target.LATIXY
 
     return regrid_target
 
