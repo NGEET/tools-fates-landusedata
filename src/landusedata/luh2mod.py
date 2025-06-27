@@ -21,18 +21,20 @@ def ImportLUH2TimeSeries(input_file,start=None,stop=None):
 def PrepDataset(input_dataset,start=None,stop=None):
 
     # Use the maximum span if start and stop are not present
-    # This assumes that the luh2 raw data will always use a
-    # 'years since' style format.
+    # Note that while both LUH2 and LUH3 data have annual time steps,
+    # the LUH2 data has units of 'years since 850-01-01' while the LUH3 data
+    # has units of 'days since 850-01-01'.
 
-    # Get the units to determine the file time
-    # It is expected that the units of time is 'years since ...'
+    # Convert days to years if necessary
+    orig_unit = input_dataset.time.units
+    if orig_unit.startswith("days"):
+        input_dataset['time'] = input_dataset.time.values//365
+        input_dataset.time.attrs['units'] = orig_unit.replace("days", "years")
+
+    # Check that the time units are correct, otherwise abort
     time_since_array = input_dataset.time.units.split()
-    if (not (time_since_array[0] == 'years' or time_since_array[0] == 'days' ) ):
+    if not (time_since_array[0] == 'years'):
         sys.exit("FileTimeUnitsError: input file units of time is not 'years since ...' or 'days since ...'")
-
-    if (time_since_array[0] == 'days' ):
-        input_dataset['time'] = input_dataset.time / 365
-        print(input_dataset.time)
 
     # Note that datetime package is not used as the date range might
     # be beyond the bounds of the packages applicable bounds
@@ -79,28 +81,39 @@ def _BoundsVariableFixLUH2(input_dataset):
 
     # Create lat and lon bounds as a single dimension array out of the LUH2 two dimensional_bounds array.
     # Future todo: is it possible to have xESMF recognize and use the original 2D array?
-    try:
+    print(list(input_dataset.data_vars))
+    if "lat_bounds" in input_dataset.keys():
         input_dataset["lat_b"] = np.insert(input_dataset.lat_bounds[:,1].data,0,input_dataset.lat_bounds[0,0].data)
+    elif "lat_bnds" in input_dataset.keys():
+        input_dataset["lat_b"] = np.insert(input_dataset.lat_bnds[:,1].data,0,input_dataset.lat_bnds[0,0].data)
+    # If bounds not found, make up evenly distributed bounds:
+    else:
+        input_dataset["lat_b"] = make_evenly_distributed_bounds_array(input_dataset.lat.values)
+        #sys.exit("LatBoundError: input file does not have latitudinal bounds of a recognised name (lat_bounds or lat_bnds)")
+    if "lon_bounds" in input_dataset.keys():
         input_dataset["lon_b"] = np.insert(input_dataset.lon_bounds[:,1].data,0,input_dataset.lon_bounds[0,0].data)
-    except:
-        input_dataset["lat_b"] = np.arange(len(input_dataset.lat)+1)*(-0.25) + 90.
-        input_dataset["lon_b"] = np.arange(len(input_dataset.lon)+1)*0.25 - 180.
-
-    #print(input_dataset["lon_b"] )
-    #print(input_dataset["lon"] )
-    
-    #print(input_dataset["lat_b"] )
-    #print(input_dataset["lat"] )
-
-    # Drop the old boundary names to avoid confusion
-    try:
+        # Drop the old boundary names to avoid confusion
         input_dataset = input_dataset.drop(labels=['lat_bounds','lon_bounds'])
-    except:
-        print('didnt need to drop lat_bounds & lon_bounds')
+    elif "lon_bnds" in input_dataset.keys():
+        input_dataset["lon_b"] = np.insert(input_dataset.lon_bnds[:,1].data,0,input_dataset.lon_bnds[0,0].data)
+        # Drop the old boundary names to avoid confusion
+        input_dataset = input_dataset.drop(labels=['lat_bnds','lon_bnds'])
+    # If bounds not found, make up evenly distributed bounds:
+    else:
+        input_dataset["lon_b"] = make_evenly_distributed_bounds_array(input_dataset.lon.values)
+        #sys.exit("LonBoundError: input file does not have longitudinal bounds of a recognised name (lon_bounds or lon_bnds)")
+
 
     print("LUH2 dataset lat/lon boundary variables formatted and added as new variable for xESMF")
 
     return(input_dataset)
+
+def make_evenly_distributed_bounds_array(orig_array):
+        step = (orig_array[1] - orig_array[0])/2.
+        lat_b= np.append((orig_array - step), orig_array[-1] + step)
+        #print(lat_b)
+        #print(len(lat_b))
+        return lat_b
 
 # Temporary: Add minor correction factor to assure states sum to one
 def CorrectStateSum(input_dataset):

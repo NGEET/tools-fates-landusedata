@@ -29,18 +29,16 @@ def _RegridTargetPrep(regrid_target):
 
 # Open the LUH2 static data file
 def ImportLUH2StaticFile(filename):
+    print(filename)
     dataset = xr.open_dataset(filename)
-
+    if 'lat_bnds' in dataset.var():
+        dataset = dataset.rename({"lat_bnds": "lat_bounds", "lon_bnds": "lon_bounds"})
     # Check to see if the imported dataset has correct variables
-    try:
-        listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
-        if list(dataset.var()) != listcheck:
-            print(dataset.var())
-    except:
-        listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bnds', 'lon_bnds']
-        if list(dataset.var()) != listcheck:
-            print(dataset.var())
-            raise TypeError("incorrect file, must be LUH2 static file")
+    listcheck = ['ptbio', 'fstnf', 'carea', 'icwtr', 'ccode', 'lat_bounds', 'lon_bounds']
+    print(dataset.var())
+    if list(dataset.var()) != listcheck:
+
+        raise TypeError("incorrect file, must be LUH2 static file")
 
     #dataset = dataset.drop(labels=['lat_bnds','lon_bnds'])
 
