@@ -21,16 +21,17 @@ def ImportLUH2TimeSeries(input_file,start=None,stop=None):
 def PrepDataset(input_dataset,start=None,stop=None):
 
     # Use the maximum span if start and stop are not present
-    # This assumes that the luh2 raw data will always use a
-    # 'years since' style format.
+    # Note that while both LUH2 and LUH3 data have annual time steps,
+    # the LUH2 data has units of 'years since 850-01-01' while the LUH3 data
+    # has units of 'days since 850-01-01'.
 
-    # Get the units to determine the file time
-    # It is expected that the units of time is 'years since ...'
-    
+    # Convert days to years if necessary
     orig_unit = input_dataset.time.units
     if orig_unit.startswith("days"):
         input_dataset['time'] = input_dataset.time.values//365
         input_dataset.time.attrs['units'] = orig_unit.replace("days", "years")
+
+    # Check that the time units are correct, otherwise abort
     time_since_array = input_dataset.time.units.split()
     if not (time_since_array[0] == 'years'):
         sys.exit("FileTimeUnitsError: input file units of time is not 'years since ...' or 'days since ...'")
