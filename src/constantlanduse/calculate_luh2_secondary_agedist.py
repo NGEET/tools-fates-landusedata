@@ -27,7 +27,7 @@ def piecewise_exponential_cumulative(ages, k1, k2, m=94):
     ##print(len(np.arange(n_age_bins-m)))
     ##print(len(ages.isel(slice(m-n_age_bins, None))))
     
-    # calculate the second piecewise exponential set, beginning with the last element ofthe first set
+    # calculate the second piecewise exponential set, beginning with the last element of the first set
     vals[m:] = vals[m]*np.exp(-k2*np.arange(n_age_bins-m))
     
     # rescale last age bin to account for all of the truncated ages beyond
