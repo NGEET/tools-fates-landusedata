@@ -12,7 +12,7 @@ from datetime import date
 def piecewise_exponential_cumulative(ages, k1, k2, m=94):
     ### this function calculates a piecewise exponential function, whose integral equals one
     # k1 is the decay rate of first exponential
-    # k2 is decay rate of secodn exponetial
+    # k2 is decay rate of second exponetial
     # m is the boundary between k1 and k2
     # this function represents the steady-state cumulative age distribution for patch ages given harvest rates for 
     # young and mature forests (k1 and k2) where m is the age that distinguishes the two age types
