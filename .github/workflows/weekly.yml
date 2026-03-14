@@ -1,8 +1,9 @@
-name: Weekly dependency test with multiple python versions
+name: Weekly unit test
 
 on:
   schedule:
     - cron: '30 23 * * SUN'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,15 +21,9 @@ jobs:
     # show python version being tested
     - name: Display Python version
       run: python -c "import sys; print(sys.version)"
-    - name: Add conda to system path
+    - name: Install dependencies
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies with unidep
-      run: |
-        conda install -c conda-forge unidep
-        unidep install pyproject.toml
-        unidep install .["test"]
-    - name: Test with pytest
-      run: |
-        pytest
+        python -m pip install --upgrade pip
+        pip install ".[test]"
+    - name: Run pytest
+      run: pytest
