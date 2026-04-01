@@ -85,7 +85,7 @@ def main(args):
     # this will contain different data from a future CLM landuse x pft update
     ds_output['frac_secnd'] = ds_output.frac_primr.copy(deep=True)
 
-    # ds_regrid = ds_regrid.rename_dims(dims_dict={'lat':'lsmlat','lon':'lsmlon'})
+    # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
 
     # Output dataset to netcdf file
     print('Writing fates landuse x pft dataset to file')
