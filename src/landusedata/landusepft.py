@@ -85,12 +85,18 @@ def main(args):
     # this will contain different data from a future CLM landuse x pft update
     ds_output['frac_secnd'] = ds_output.frac_primr.copy(deep=True)
 
+    # Drop the mask remaining post merge
+    ds_output = ds_output.drop_vars(['mask'])
+
     # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
+
+    # Set the output encoding for missing values to be -9999 instead of the default NaN
+    encoding = {var: {'_FillValue': -9999} for var in ds_output.data_vars}
 
     # Output dataset to netcdf file
     print('Writing fates landuse x pft dataset to file')
     output_file = os.path.join(os.getcwd(),args.output)
-    ds_output.to_netcdf(output_file)
+    ds_output.to_netcdf(output_file, encoding=encoding)
 
 if __name__ == "__main__":
     main()
