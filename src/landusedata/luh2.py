@@ -96,8 +96,8 @@ def main(args):
         if (not(regrid_reuse)):
             regrid_reuse = True
 
-    # Set the output encoding for missing values to be -9999 instead of the default NaN
-    encoding = {var: {'_FillValue': -9999} for var in ds_output.data_vars}
+    # Set the output encoding for missing values to be -999 instead of the default NaN
+    encoding = {var: {'_FillValue': -999.0} for var in ds_output.data_vars}
 
     # Write the files
     # TO DO: add check to handle if the user enters the full path

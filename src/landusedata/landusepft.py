@@ -90,8 +90,8 @@ def main(args):
 
     # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
 
-    # Set the output encoding for missing values to be -9999 instead of the default NaN
-    encoding = {var: {'_FillValue': -9999} for var in ds_output.data_vars}
+    # Set the output encoding for missing values to be -999 instead of the default NaN
+    encoding = {var: {'_FillValue': -999.0} for var in ds_output.data_vars}
 
     # Output dataset to netcdf file
     print('Writing fates landuse x pft dataset to file')
