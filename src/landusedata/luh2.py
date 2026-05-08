@@ -133,6 +133,5 @@ def main(args):
     print("generating output: {}".format(output_file))
     ds_output.to_netcdf(output_file, encoding=encoding)
 
-
 if __name__ == "__main__":
     main()
