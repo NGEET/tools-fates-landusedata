@@ -98,6 +98,9 @@ def main(args):
         if (not(regrid_reuse)):
             regrid_reuse = True
 
+    # Set the output encoding for missing values to be -999 instead of the default NaN
+    encoding = {var: {'_FillValue': -999.0} for var in ds_output.data_vars}
+
     # Write the files
     # TO DO: add check to handle if the user enters the full path
     if args.output == "LUH2_timeseries.nc":
@@ -105,7 +108,7 @@ def main(args):
     else: 
         output_file = os.path.join(os.getcwd(),args.output)
     print("generating output: {}".format(output_file))
-    ds_output.to_netcdf(output_file)
+    ds_output.to_netcdf(output_file, encoding=encoding)
 
 if __name__ == "__main__":
     main()

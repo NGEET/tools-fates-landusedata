@@ -91,7 +91,13 @@ def main(args):
     # this will contain different data from a future CLM landuse x pft update
     ds_output['frac_secnd'] = ds_output.frac_primr.copy(deep=True)
 
-    # ds_regrid = ds_regrid.rename_dims(dims_dict={'lat':'lsmlat','lon':'lsmlon'})
+    # Drop the mask remaining post merge
+    ds_output = ds_output.drop_vars(['mask'])
+
+    # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
+
+    # Set the output encoding for missing values to be -999 instead of the default NaN
+    encoding = {var: {'_FillValue': -999.0} for var in ds_output.data_vars}
 
     # Output dataset to netcdf file
     if args.output == "fates_landuse_pft_map.nc":

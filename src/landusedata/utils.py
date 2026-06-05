@@ -21,10 +21,26 @@ def _RegridTargetPrep(regrid_target):
     by xesmf.  As such, this function renames the dimensions.  It also adds
     lat/lon coordinates based on the LONGXY and LATIXY variables.
     """
+<<<<<<< HEAD
     if 'lsmlat' in regrid_target.dims:
         regrid_target = regrid_target.rename_dims(dims_dict={'lsmlat':'lat','lsmlon':'lon'})
         regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
         regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
+=======
+
+    # Skip if lat and lon are already the dimension names
+    if "lat" in regrid_target.dims and "lon" in regrid_target.dims:
+        return regrid_target
+
+    # Drop dimension variables if they already exist
+    regrid_target = regrid_target.drop_vars("lat", errors="ignore")
+    regrid_target = regrid_target.drop_vars("lon", errors="ignore")
+
+    # Rename dimensions and add coordinates
+    regrid_target = regrid_target.rename({'lsmlat':'lat','lsmlon':'lon'})
+    regrid_target['lon'] = regrid_target.LONGXY.isel(lat=0)
+    regrid_target['lat'] = regrid_target.LATIXY.isel(lon=0)
+>>>>>>> main
 
     return regrid_target
 
@@ -40,6 +56,8 @@ def ImportLUH2StaticFile(filename):
     if list(dataset.var()) != listcheck:
 
         raise TypeError("incorrect file, must be LUH2 static file")
+
+    #dataset = dataset.drop(labels=['lat_bnds','lon_bnds'])
 
     # Convert all data from single to double precision
     dataset = dataset.astype('float64')
