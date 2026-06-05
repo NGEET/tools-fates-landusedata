@@ -4,8 +4,8 @@ import xarray as xr
 from datetime import datetime, UTC
 
 from landusedata.luh2mod import ImportLUH2TimeSeries, CorrectStateSum
-from landusedata.regrid import RegridConservative, RegridLoop
-from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget
+from landusedata.regrid import RegridConservative
+from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget, COMMON_CAP_THRESHOLD
 from landusedata.utils import SetMaskRegridTarget, DefineStaticMask
 
 
@@ -107,6 +107,9 @@ def main(args):
         output_file = os.path.join(os.getcwd(), f"LUH2_timeseries_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc")
     else: 
         output_file = os.path.join(os.getcwd(),args.output)
+
+    print("Before writing output, apply capping threshold to avoid very small values from regridding")
+    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD)
     print("generating output: {}".format(output_file))
     ds_output.to_netcdf(output_file, encoding=encoding)
 

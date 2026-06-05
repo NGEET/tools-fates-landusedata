@@ -4,7 +4,7 @@ import xesmf as xe
 from datetime import datetime, UTC
 
 from landusedata.landusepftmod import ImportLandusePFTFile, AddLatLonCoordinates, RenormalizePFTs
-from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget
+from landusedata.utils import ImportLUH2StaticFile, ImportRegridTarget, COMMON_CAP_THRESHOLD
 from landusedata.utils import SetMaskRegridTarget, DefineStaticMask
 from landusedata.regrid import GenerateRegridder
 
@@ -106,6 +106,9 @@ def main(args):
         output_file = os.path.join(os.getcwd(), fname)
     else: 
         output_file = os.path.join(os.getcwd(),args.output)
+    print("Before writing output, apply capping threshold to avoid very small values from regridding")
+    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD)
+
     print(f'Writing fates landuse x pft dataset to file {output_file}')
     ds_output.to_netcdf(output_file)
 

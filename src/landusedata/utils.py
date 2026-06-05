@@ -1,5 +1,7 @@
 import xarray as xr
 
+COMMON_CAP_THRESHOLD = 1.e-18
+
 def ImportRegridTarget(filename):
     dataset = xr.open_dataset(filename)
 
