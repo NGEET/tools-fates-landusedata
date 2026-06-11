@@ -119,11 +119,12 @@ def main(args):
     # TO DO: add check to handle if the user enters the full path
     if args.output == "LUH2_timeseries.nc":
         output_file = os.path.join(
-            os.getcwd(),
+            #os.getcwd(),
+            "/div/no-backup-nac/users/jessica/ne16_lufiles",
             f"LUH2_timeseries_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc",
         )
     else:
-        output_file = os.path.join(os.getcwd(), args.output)
+        output_file = os.path.join("/div/no-backup-nac/users/jessica/ne16_lufiles", args.output)
 
     print(
         "Before writing output, apply capping threshold to avoid very small values from regridding"
