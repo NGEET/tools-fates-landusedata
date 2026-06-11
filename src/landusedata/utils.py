@@ -37,9 +37,10 @@ def _RegridTargetPrep(regrid_target):
     regrid_target = regrid_target.drop_vars("lon", errors="ignore")
 
     # Rename dimensions and add coordinates
-    regrid_target = regrid_target.rename({"lsmlat": "lat", "lsmlon": "lon"})
-    regrid_target["lon"] = regrid_target.LONGXY.isel(lat=0)
-    regrid_target["lat"] = regrid_target.LATIXY.isel(lon=0)
+    if 'lsmlat' in regrid_target.dims:
+        regrid_target = regrid_target.rename({"lsmlat": "lat", "lsmlon": "lon"})
+        regrid_target["lon"] = regrid_target.LONGXY.isel(lat=0)
+        regrid_target["lat"] = regrid_target.LATIXY.isel(lon=0)
 
     return regrid_target
 
