@@ -1,6 +1,6 @@
 import xarray as xr
 
-COMMON_CAP_THRESHOLD = 1.0e-18
+COMMON_CAP_THRESHOLD = 1.0e-15
 
 
 def ImportRegridTarget(filename):
