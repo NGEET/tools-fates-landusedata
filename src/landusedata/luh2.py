@@ -128,10 +128,13 @@ def main(args):
     print(
         "Before writing output, apply capping threshold to avoid very small values from regridding"
     )
-    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD)
+    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD, ds_output, 0.0)
+
+    # Set the output encoding for missing values to be -999 instead of the default NaN
+    encoding = {var: {"_FillValue": -999.0} for var in ds_output.data_vars}
+
     print("generating output: {}".format(output_file))
     ds_output.to_netcdf(output_file, encoding=encoding)
-
 
 if __name__ == "__main__":
     main()
