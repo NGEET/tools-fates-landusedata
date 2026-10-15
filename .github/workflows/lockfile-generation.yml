@@ -1,0 +1,43 @@
+name: Generate a lockfile for reproducible conda environments
+
+# This workflow should be triggered when the pyproject.toml file is modified.
+# It will also regenerate the lockfile on a regular schedule to ensure it remains up-to-date.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * MON'  # Every Monday at midnight UTC
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+    - 'pyproject.toml'
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: "3.12"
+
+        - name: Install conda-lock
+          run: |
+            python -m pip install --upgrade pip
+            pip install conda-lock  
+
+        - name: Generate conda-lock.yml
+          run: | 
+           conda-lock -f pyproject.toml -p linux-64
+          
+        - name: Upload conda-lock.yml
+          uses: actions/upload-artifact@v4
+          with:
+            name: conda-lock.yml
+            path: conda-lock.yml
+
+           
