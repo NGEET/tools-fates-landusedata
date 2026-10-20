@@ -55,8 +55,8 @@ ntime_total = len(fin_luh2.time)
 # calculate the year that you want to calculate a steady-state logging rate for
 year_to_calc_steadystate = int(sys.argv[2])
 if (year_to_calc_steadystate < year_luh2_start) or (year_to_calc_steadystate > year_luh2_start + ntime_total):
-    print("year_to_calc_steadystate must be within the time span of data file")
-    print(year_to_calc_steadystate)
+    print("year_to_calc_steadystate ", year_to_calc_steadystate, " must be within the time span of data file")
+    print("year_luh2_start", year_luh2_start, " year_luh2_end", year_luh2_start + ntime_total)
     sys.exit(4)
 
 gridname = sys.argv[3]
