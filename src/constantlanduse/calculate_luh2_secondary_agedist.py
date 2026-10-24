@@ -26,7 +26,6 @@ def piecewise_exponential_cumulative(ages, k1, k2, m=DEFAULT_AGE_MATURE):
     vals[m:] = vals[m] * np.exp(-k2 * np.arange(n_age_bins - m))
     return vals.cumsum()
 
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Calculate LUH2/LUH3 secondary forest age distributions and steady-state harvest rates."
