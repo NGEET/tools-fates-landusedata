@@ -131,7 +131,11 @@ class BuildRegridder:
             coords = {'lat': self._target_lat, 'lon': self._target_lon}
         else:
             coords = {}
-            
+
+        for dim in extra_dim_names:
+            if dim in da.coords:
+                coords[dim] = (dim, da.coords[dim].values)
+
         if extra_dims:
             out = np.empty(extra_dims + self._dst_field.data.shape)
             for idx in np.ndindex(extra_dims):
@@ -144,9 +148,9 @@ class BuildRegridder:
     def __call__(self, ds):
         if isinstance(ds, xr.DataArray):
             return self._regrid_variable(ds)
-        result = {var: self._regrid_variable(ds[var]) for var in ds.data_vars}
+        result = {var: self._regrid_variable(ds[var]) for var in ds.data_vars
+            if 'lat' in ds[var].dims and 'lon' in ds[var].dims}
         return xr.Dataset(result)
-
     
     
 def RegridConservative(ds_to_regrid, ds_regrid_target, regridder_weights_file, regrid_reuse, \

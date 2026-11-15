@@ -103,7 +103,13 @@ def main(args):
         # We could do this with an append during the write phase instead of the merge
         # What is the performance impact of writing to disk between dataset regrids
         # versus holding the output in memory?
-        ds_output = ds_output.merge(regrid_luh2)
+        # Note: transition and states actually have different dimensions
+        # there is one more timestamp for states, since they are the endpoints
+        # of transitions.  So when we are packing these together, we specify
+        # that we keep all the states and pack an unitilzied value at the end
+        # for the transitions (outer), if we chose inner, it would get rid of the last
+        # state and have no packing
+        ds_output = ds_output.merge(regrid_luh2, join='outer')
 
         # If regrid_reuse is False, change it to True for the next loop so that
         # the previously generated weights file is reused
