@@ -24,8 +24,8 @@ def AddLatLonCoordinates(dataset):
 
 # Renormalize the pft percentages without the bareground
 def RenormalizePFTs(dataset):
-    # Remove the bareground pft index from the dataset
     percent = dataset.PCT_NAT_PFT.isel(natpft=slice(1,None))
-    # Normalize
     percent = percent / percent.sum(dim='natpft')
-    return percent
+    equal_frac = 1./float(percent.sizes["natpft"])
+    return percent.fillna(equal_frac)
+    

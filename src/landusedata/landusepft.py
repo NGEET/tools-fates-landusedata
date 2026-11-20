@@ -13,11 +13,12 @@ from landusedata.utils import (
     ImportRegridTarget,
     COMMON_CAP_THRESHOLD,
 )
-from landusedata.utils import SetMaskRegridTarget, DefineStaticMask
+from landusedata.utils import DefineStaticMask
 from landusedata.regrid import GenerateRegridder
 
 
 def main(args):
+
     # Open the files
     ds_static = ImportLUH2StaticFile(args.luh2_static_file)
     filelist = [
@@ -65,9 +66,6 @@ def main(args):
     # Open and prepare the target dataset
     ds_target = ImportRegridTarget(args.regrid_target_file)
 
-    # Set the mask for the regrid target
-    ds_target = SetMaskRegridTarget(ds_target)
-
     # Create an output dataset to contain individually regridded landuse percent datasets
     ds_output = xr.Dataset()
 
@@ -83,14 +81,6 @@ def main(args):
         # Convert current percent data array into temporary dataset
         ds_percent = data_array.to_dataset(name=varname)
 
-        # Apply mask for the current dataset
-        ds_percent["mask"] = mask_icwtr
-        if varname != "frac_brgnd":
-            mask_zeropercent = xr.where(
-                ds_percent[varname].sum(dim="natpft") == 0.0, 0, 1
-            )
-            ds_percent["mask"] = ds_percent.mask * mask_zeropercent
-
         # Regrid current dataset
         print("Regridding {}".format(varname))
 
@@ -99,7 +89,6 @@ def main(args):
             ds_target,
             regridder_weights_file=args.regridder_weights,
             regrid_reuse=regrid_reuse,
-            regrid_method="conservative_normed",
             se_grid_file=args.se_grid_file,
             src_mask=mask_icwtr.sortby('lat').values)
 
@@ -107,22 +96,12 @@ def main(args):
         
         ds_regrid = regridder(ds_percent)
 
-        # Drop mask to avoid conflicts when merging
-        if varname != "frac_brgnd":
-            # There is no mask currently on the bareground
-            ds_regrid = ds_regrid.drop_vars(["mask"])
-
         # Append the new dataset to the output dataset
         ds_output = ds_output.merge(ds_regrid,compat='override')
 
     # Duplicate the 'primary' data array into a 'secondary' data array.  Eventually
     # this will contain different data from a future CLM landuse x pft update
     ds_output["frac_secnd"] = ds_output.frac_primr.copy(deep=True)
-
-    # Drop the mask remaining post merge
-    ds_output = ds_output.drop_vars(["mask"])
-
-    # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
 
     # Output dataset to netcdf file
     if args.output is None:
