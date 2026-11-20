@@ -1,7 +1,7 @@
 import re, sys
 import numpy as np
 import xarray as xr
-import xesmf as xe
+
 
 
 # Import luh2 or surface data sets
@@ -87,58 +87,9 @@ def PrepDataset(input_dataset, start=None, stop=None):
     # Save the timesince as a variable for future use
     input_dataset["timesince"] = time_since
 
-    # Correct the necessary variables for both datasets
-    input_dataset = _BoundsVariableFixLUH2(input_dataset)
 
     return input_dataset
 
-
-# Create the necessary variable "lat_b" and "lon_b" for xESMF conservative regridding
-# Each lat/lon boundary array is a 2D array corresponding to the bounds of each
-# coordinate position (e.g. lat_boundary would be 90.0 and 89.75 for lat coordinate
-# of 89.875).
-def _BoundsVariableFixLUH2(input_dataset):
-    # Create lat and lon bounds as a single dimension array out of the LUH2 two dimensional_bounds array.
-    # Future todo: is it possible to have xESMF recognize and use the original 2D array?
-    print(list(input_dataset.data_vars))
-    if "lat_bounds" in input_dataset.keys():
-        input_dataset["lat_b"] = np.insert(
-            input_dataset.lat_bounds[:, 1].data, 0, input_dataset.lat_bounds[0, 0].data
-        )
-    elif "lat_bnds" in input_dataset.keys():
-        input_dataset["lat_b"] = np.insert(
-            input_dataset.lat_bnds[:, 1].data, 0, input_dataset.lat_bnds[0, 0].data
-        )
-    # If bounds not found, make up evenly distributed bounds:
-    else:
-        input_dataset["lat_b"] = make_evenly_distributed_bounds_array(
-            input_dataset.lat.values
-        )
-        # sys.exit("LatBoundError: input file does not have latitudinal bounds of a recognised name (lat_bounds or lat_bnds)")
-    if "lon_bounds" in input_dataset.keys():
-        input_dataset["lon_b"] = np.insert(
-            input_dataset.lon_bounds[:, 1].data, 0, input_dataset.lon_bounds[0, 0].data
-        )
-        # Drop the old boundary names to avoid confusion
-        input_dataset = input_dataset.drop(labels=["lat_bounds", "lon_bounds"])
-    elif "lon_bnds" in input_dataset.keys():
-        input_dataset["lon_b"] = np.insert(
-            input_dataset.lon_bnds[:, 1].data, 0, input_dataset.lon_bnds[0, 0].data
-        )
-        # Drop the old boundary names to avoid confusion
-        input_dataset = input_dataset.drop(labels=["lat_bnds", "lon_bnds"])
-    # If bounds not found, make up evenly distributed bounds:
-    else:
-        input_dataset["lon_b"] = make_evenly_distributed_bounds_array(
-            input_dataset.lon.values
-        )
-        # sys.exit("LonBoundError: input file does not have longitudinal bounds of a recognised name (lon_bounds or lon_bnds)")
-
-    print(
-        "LUH2 dataset lat/lon boundary variables formatted and added as new variable for xESMF"
-    )
-
-    return input_dataset
 
 
 def make_evenly_distributed_bounds_array(orig_array):

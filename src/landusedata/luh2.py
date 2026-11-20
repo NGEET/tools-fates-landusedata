@@ -1,10 +1,9 @@
-import argparse, os, sys
-
+import os
 import xarray as xr
 from datetime import datetime, UTC
 
 from landusedata.luh2mod import ImportLUH2TimeSeries, CorrectStateSum
-from landusedata.regrid import RegridConservative
+from landusedata.regrid import GenerateRegridder, RegridLoop
 from landusedata.utils import (
     ImportLUH2StaticFile,
     ImportRegridTarget,
@@ -52,15 +51,18 @@ def main(args):
     # At the beginning of the loop, there is no regrid weights file to reuse
     regrid_reuse = False
     for dataset in ds_luh2:
+
         # Regrid the luh2 data to the target grid
-        # TO DO: provide a check for the save argument based on the input arguments
-        regrid_luh2, regridder_luh2 = RegridConservative(
+
+        regridder_luh2 = GenerateRegridder(
             dataset,
             ds_regrid_target,
-            args.regridder_weights,
-            regrid_reuse,
-            intermediate_regridding_file=args.intermediate_regridding_file,
-        )
+            regridder_weights_file=args.regridder_weights,
+            regrid_reuse=regrid_reuse,
+            se_grid_file=args.se_grid_file,
+            src_mask=mask_icwtr.sortby('lat').values)
+        
+        regrid_luh2 = RegridLoop(dataset, regridder_luh2)
 
         # Regrid the inverted ice/water fraction data to the target grid
         regrid_land_fraction = regridder_luh2(ds_luh2_static)
@@ -105,19 +107,22 @@ def main(args):
         # We could do this with an append during the write phase instead of the merge
         # What is the performance impact of writing to disk between dataset regrids
         # versus holding the output in memory?
-        ds_output = ds_output.merge(regrid_luh2)
+        # Note: transition and states actually have different dimensions
+        # there is one more timestamp for states, since they are the endpoints
+        # of transitions.  So when we are packing these together, we specify
+        # that we keep all the states and pack an unitilzied value at the end
+        # for the transitions (outer), if we chose inner, it would get rid of the last
+        # state and have no packing
+        ds_output = ds_output.merge(regrid_luh2, join='outer')
 
         # If regrid_reuse is False, change it to True for the next loop so that
         # the previously generated weights file is reused
         if not (regrid_reuse):
             regrid_reuse = True
 
-    # Set the output encoding for missing values to be -999 instead of the default NaN
-    encoding = {var: {"_FillValue": -999.0} for var in ds_output.data_vars}
-
     # Write the files
     # TO DO: add check to handle if the user enters the full path
-    if args.output == "LUH2_timeseries.nc":
+    if args.output is None:
         output_file = os.path.join(
             os.getcwd(),
             f"LUH2_timeseries_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc",

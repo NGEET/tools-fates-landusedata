@@ -1,7 +1,7 @@
-import argparse, os, sys
+import os
 import xarray as xr
-import xesmf as xe
 from datetime import datetime, UTC
+import numpy as np
 
 from landusedata.landusepftmod import (
     ImportLandusePFTFile,
@@ -13,11 +13,12 @@ from landusedata.utils import (
     ImportRegridTarget,
     COMMON_CAP_THRESHOLD,
 )
-from landusedata.utils import SetMaskRegridTarget, DefineStaticMask
+from landusedata.utils import DefineStaticMask
 from landusedata.regrid import GenerateRegridder
 
 
 def main(args):
+
     # Open the files
     ds_static = ImportLUH2StaticFile(args.luh2_static_file)
     filelist = [
@@ -65,12 +66,13 @@ def main(args):
     # Open and prepare the target dataset
     ds_target = ImportRegridTarget(args.regrid_target_file)
 
-    # Set the mask for the regrid target
-    ds_target = SetMaskRegridTarget(ds_target)
-
     # Create an output dataset to contain individually regridded landuse percent datasets
     ds_output = xr.Dataset()
 
+    # We will resuse the regrid weights file after its
+    # built on the first pass
+    regrid_reuse = False
+    
     # Loop through percentage list and regrid each entry
     for index, data_array in enumerate(percent):
         # Get the name for the new variable
@@ -79,67 +81,44 @@ def main(args):
         # Convert current percent data array into temporary dataset
         ds_percent = data_array.to_dataset(name=varname)
 
-        # Apply mask for the current dataset
-        ds_percent["mask"] = mask_icwtr
-        if varname != "frac_brgnd":
-            mask_zeropercent = xr.where(
-                ds_percent[varname].sum(dim="natpft") == 0.0, 0, 1
-            )
-            ds_percent["mask"] = ds_percent.mask * mask_zeropercent
-
         # Regrid current dataset
         print("Regridding {}".format(varname))
-        # regridder = xe.Regridder(ds_percent, ds_target, "conservative_normed")
-        print(args)
+
         regridder = GenerateRegridder(
             ds_percent,
             ds_target,
-            args.regridder_weights,
-            regrid_reuse=False,
-            regrid_method="conservative_normed",
-            intermediate_regridding_file=args.intermediate_regridding_file,
-        )
+            regridder_weights_file=args.regridder_weights,
+            regrid_reuse=regrid_reuse,
+            se_grid_file=args.se_grid_file,
+            src_mask=mask_icwtr.sortby('lat').values)
+
+        regrid_reuse = True
+        
         ds_regrid = regridder(ds_percent)
 
-        # Drop mask to avoid conflicts when merging
-        if varname != "frac_brgnd":
-            # There is no mask currently on the bareground
-            ds_regrid = ds_regrid.drop_vars(["mask"])
-
         # Append the new dataset to the output dataset
-        print(ds_regrid)
-        print(ds_regrid.indexes)
-        ds_output = ds_output.merge(ds_regrid)
+        ds_output = ds_output.merge(ds_regrid,compat='override')
 
     # Duplicate the 'primary' data array into a 'secondary' data array.  Eventually
     # this will contain different data from a future CLM landuse x pft update
     ds_output["frac_secnd"] = ds_output.frac_primr.copy(deep=True)
 
-    # Drop the mask remaining post merge
-    ds_output = ds_output.drop_vars(["mask"])
-
-    # ds_regrid = ds_regrid.rename({'lat':'lsmlat','lon':'lsmlon'})
-
-    # Set the output encoding for missing values to be -999 instead of the default NaN
-    encoding = {var: {"_FillValue": -999.0} for var in ds_output.data_vars}
-
     # Output dataset to netcdf file
-    if args.output == "fates_landuse_pft_map.nc":
+    if args.output is None:
         fname = f"fates_landuse_pft_map_to_{args.regrid_target_file.split('/')[-1].split('.')[0]}_{datetime.now(UTC).strftime('%y%m%d')}.nc"
-        print(fname)
         output_file = os.path.join(os.getcwd(), fname)
     else:
         output_file = os.path.join(os.getcwd(), args.output)
     print(
         "Before writing output, apply capping threshold to avoid very small values from regridding"
     )
-    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD, ds_output, 0.0)
+    ds_output = ds_output.where(ds_output > COMMON_CAP_THRESHOLD, other=0.0)
 
     # Set the output encoding for missing values to be -999 instead of the default NaN
     encoding = {var: {"_FillValue": -999.0} for var in ds_output.data_vars}
 
     print(f"Writing fates landuse x pft dataset to file {output_file}")
-    ds_output.to_netcdf(output_file)
+    ds_output.to_netcdf(output_file,encoding=encoding)
 
 
 if __name__ == "__main__":
