@@ -129,9 +129,9 @@ def make_time_spatial_dataarray(data, time_coord, spatial_dims, spatial_coords, 
     return xr.DataArray(data, dims=("time", *spatial_dims), coords=coords, name=name)
 
 
-def make_age_distribution_dataarray(data, time_coord, ages, spatial_dims, spatial_coords):
-    coords = {"time": time_coord, "age": ages, **spatial_coords}
-    return xr.DataArray(data, dims=("time", "age", *spatial_dims), coords=coords)
+def make_age_distribution_dataarray(data, ages, spatial_dims, spatial_coords):
+    coords = {"age": ages, **spatial_coords}
+    return xr.DataArray(data, dims=("age", *spatial_dims), coords=coords)
 
 
 def prepare_inputs(fin_luh2, nages):
@@ -203,12 +203,24 @@ def prepare_inputs(fin_luh2, nages):
     }
 
 
-def propagate_age_distribution(fin_luh2, prepared, nages, age_mature):
+def propagate_age_distribution(fin_luh2, prepared, nages, age_mature, year_index):
+    """Propagate the secondary-forest age distribution through time.
+
+    Only the current and next timesteps of the (age, space) distribution are
+    held in memory; the distribution at ``year_index`` is saved and returned.
+    Storing the full (time, age, space) array needs ~156 GB at 1-degree
+    resolution, and the downstream metrics multiplied that several-fold.
+    """
     grid = prepared["grid"]
     spatial_dims = grid["spatial_dims"]
     spatial_coords = grid["spatial_coords"]
     spatial_shape = grid["spatial_shape"]
     ntime_total = prepared["ntime_total"]
+
+    if not 0 <= year_index < ntime_total:
+        raise ValueError(
+            f"year index {year_index} is outside the input time range [0, {ntime_total - 1}]"
+        )
 
     sectot_np = prepared["sectot"].to_numpy()
     rate_newsec_creation_np = prepared["rate_newsec_creation"].to_numpy()
@@ -217,8 +229,10 @@ def propagate_age_distribution(fin_luh2, prepared, nages, age_mature):
     secnf_harv_np = prepared["secnf_harv"].to_numpy()
     secmf_harv_np = prepared["secmf_harv"].to_numpy()
 
-    age_dist_np = np.zeros((ntime_total, nages, *spatial_shape), dtype=float)
-    age_dist_np[0, 0] = sectot_np[0]
+    current = np.zeros((nages, *spatial_shape), dtype=float)
+    next_dist = np.zeros_like(current)
+    current[0] = sectot_np[0]
+    age_dist_at_year = current.copy() if year_index == 0 else None
 
     generic_shape = (ntime_total, *spatial_shape)
     secy_dist_np = np.zeros(generic_shape, dtype=float)
@@ -232,8 +246,6 @@ def propagate_age_distribution(fin_luh2, prepared, nages, age_mature):
         if t % 50 == 0:
             print("starting year", t)
 
-        current = age_dist_np[t]
-        next_dist = age_dist_np[t + 1]
         next_dist.fill(0.0)
         next_dist[0] = rate_newsec_creation_np[t]
 
@@ -269,9 +281,12 @@ def propagate_age_distribution(fin_luh2, prepared, nages, age_mature):
         k_secthar_dist_np[t] = k_secthar
         k_secmhar_dist_np[t] = k_secmhar
 
+        current, next_dist = next_dist, current
+        if t + 1 == year_index:
+            age_dist_at_year = current.copy()
+
     age_dist = make_age_distribution_dataarray(
-        age_dist_np,
-        fin_luh2.time,
+        age_dist_at_year,
         prepared["ages_np"],
         spatial_dims,
         spatial_coords,
@@ -352,11 +367,12 @@ def fit_piecewise_harvest_rates(
     sec_mature_harvestrate_rel = generic_nan_array.copy()
     fails = generic_nan_array.copy()
 
+    # age_dist_cum_norm and sectot are already the single year_index slice
     x = ages.isel(age=slice(0, n_age_max)).data
-    y_values = age_dist_cum_norm.isel(time=year_index, age=slice(0, n_age_max)).transpose(
+    y_values = age_dist_cum_norm.isel(age=slice(0, n_age_max)).transpose(
         *spatial_dims, "age"
     ).to_numpy()
-    active = sectot.isel(time=year_index).transpose(*spatial_dims).to_numpy() > 0.0
+    active = sectot.transpose(*spatial_dims).to_numpy() > 0.0
 
     if reg_grid:
         for j in range(grid["spatial_shape"][0]):
@@ -463,15 +479,19 @@ def run_workflow(
     print(fin_luh2.dims)
     print(prepared["sectot"])
 
-    propagation = propagate_age_distribution(fin_luh2, prepared, nages, age_mature)
+    year_index = year_to_calc_steadystate - year_luh2_start
+    propagation = propagate_age_distribution(
+        fin_luh2, prepared, nages, age_mature, year_index
+    )
+    # age_dist holds only the year_index slice, so the metrics are for that year
+    sectot_at_year = prepared["sectot"].isel(time=year_index, drop=True)
     metrics = derive_age_metrics(
-        propagation["age_dist"], prepared["ages"], prepared["sectot"]
+        propagation["age_dist"], prepared["ages"], sectot_at_year
     )
 
-    year_index = year_to_calc_steadystate - year_luh2_start
     fit_results = fit_piecewise_harvest_rates(
         metrics["age_dist_cum_norm"],
-        prepared["sectot"],
+        sectot_at_year,
         prepared["grid"],
         prepared["ages"],
         year_index,
