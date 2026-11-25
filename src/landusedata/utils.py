@@ -51,6 +51,15 @@ def ImportLUH2StaticFile(filename):
     dataset = xr.open_dataset(filename)
     if "lat_bnds" in dataset.var():
         dataset = dataset.rename({"lat_bnds": "lat_bounds", "lon_bnds": "lon_bounds"})
+    # Drop the CF "bounds" attributes from lat/lon. They point at bounds
+    # variables that do not travel with lat/lon into the datasets that are
+    # regridded downstream (e.g. landusepft), so xesmf/cf_xarray falls back to
+    # generating bounds and then fails with "Received multiple matches for
+    # 'longitude' that have a bounds attribute". Without the attribute, xesmf
+    # generates the bounds cleanly.
+    for coord in ("lat", "lon"):
+        if coord in dataset.coords:
+            dataset[coord].attrs.pop("bounds", None)
     # Check to see if the imported dataset has correct variables
     listcheck = [
         "ptbio",
